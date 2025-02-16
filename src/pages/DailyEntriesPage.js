@@ -24,6 +24,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import SaveIcon from '@mui/icons-material/Save'
 import ClearIcon from '@mui/icons-material/Clear'
 import InfoIcon from '@mui/icons-material/Info'
+import API_BASE_URL from "../apiConfig";
 
 // =============== Utilities ===============
 function getDaysInMonth(year, month) {
@@ -166,8 +167,8 @@ export default function DailyEntriesPage() {
         setError(null)
         try {
             const [supRes, dailyRes] = await Promise.all([
-                fetch('http://localhost:8080/api/suppliers'),
-                fetch(`http://localhost:8080/api/daily-entries?year=${y}&month=${m}`)
+                fetch(`${API_BASE_URL}/api/suppliers`),
+                fetch(`${API_BASE_URL}/api/daily-entries?year=${y}&month=${m}`)
             ])
             if (!supRes.ok) throw new Error('Failed to fetch suppliers')
             if (!dailyRes.ok) throw new Error('Failed to fetch daily entries')
@@ -298,7 +299,7 @@ export default function DailyEntriesPage() {
         }
 
         try {
-            await fetch('http://localhost:8080/api/daily-entries/bulk-upsert', {
+            await fetch(`${API_BASE_URL}/api/daily-entries/bulk-upsert`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(upserts)
@@ -382,7 +383,7 @@ export default function DailyEntriesPage() {
         try {
             // delete removed
             for (let rid of removedIds) {
-                await fetch(`http://localhost:8080/api/daily-entries/${rid}`, {
+                await fetch(`${API_BASE_URL}/api/daily-entries/${rid}`, {
                     method: 'DELETE'
                 })
             }
@@ -394,7 +395,7 @@ export default function DailyEntriesPage() {
                     supplierId: qualitySupplier.id,
                     fatPct: parseFloat(q.fatPct) || 0
                 }
-                await fetch('http://localhost:8080/api/daily-entries/upsert', {
+                await fetch(`${API_BASE_URL}/api/daily-entries/upsert`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)

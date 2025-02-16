@@ -11,6 +11,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import SupplierTable from './SupplierTable'
 import SupplierFormDialog from './SupplierFormDialog'
+import API_BASE_URL from "../apiConfig";
 
 export default function SuppliersPage() {
     const [suppliers, setSuppliers] = useState([])
@@ -35,7 +36,7 @@ export default function SuppliersPage() {
     const fetchSuppliers = async () => {
         setIsLoading(true)
         try {
-            const response = await fetch('http://localhost:8080/api/suppliers')
+            const response = await fetch(`${API_BASE_URL}/api/suppliers`)
             const data = await response.json()
             data.sort((a, b) => a.id - b.id) // sort by ID ascending
             setSuppliers(data)
@@ -86,7 +87,7 @@ export default function SuppliersPage() {
     // ---------------------------
     const handleDelete = async (supplierId) => {
         try {
-            await fetch(`http://localhost:8080/api/suppliers/${supplierId}`, {
+            await fetch(`${API_BASE_URL}/api/suppliers/${supplierId}`, {
                 method: 'DELETE'
             })
             fetchSuppliers()
@@ -127,14 +128,14 @@ export default function SuppliersPage() {
         try {
             if (mode === 'ADD') {
                 // POST
-                await fetch('http://localhost:8080/api/suppliers', {
+                await fetch(`${API_BASE_URL}/api/suppliers`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(supplierData)
                 })
             } else if (mode === 'EDIT') {
                 // PUT /suppliers/:id
-                await fetch(`http://localhost:8080/api/suppliers/${supplierData.id}`, {
+                await fetch(`${API_BASE_URL}/api/suppliers/${supplierData.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(supplierData)
