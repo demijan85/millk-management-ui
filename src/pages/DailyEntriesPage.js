@@ -23,8 +23,12 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import SaveIcon from '@mui/icons-material/Save'
 import ClearIcon from '@mui/icons-material/Clear'
-import InfoIcon from '@mui/icons-material/Info'
 import API_BASE_URL from "../apiConfig";
+import { confirmAlert } from 'react-confirm-alert'; // Import
+import 'react-confirm-alert/src/react-confirm-alert.css';
+import GetAppIcon from "@mui/icons-material/GetApp";
+import * as XLSX from 'xlsx';
+
 
 // =============== Utilities ===============
 function getDaysInMonth(year, month) {
@@ -79,7 +83,8 @@ const CellInput = React.memo(function CellInput({
                                                     day,
                                                     initialValue,
                                                     onCellChange,
-                                                    hasQuality // if true => highlight or show an icon
+                                                    hasQuality,
+                                                    fatPct
                                                 }) {
     const [value, setValue] = useState(initialValue || '')
 
@@ -101,12 +106,12 @@ const CellInput = React.memo(function CellInput({
 
     // Optional styling if there's a quality measurement for this day
     const cellStyle = {
-        width: '50px',
+        width: '53px',
         textAlign: 'center',
-        fontSize: '0.8rem',
+        fontSize: '1.0rem',
         border: '1px solid #ccc',
         borderRadius: 4,
-        padding: '2px',
+        padding: '3px',
         backgroundColor: hasQuality ? '#fff8cc' : '#fff' // light yellow if hasQuality
     }
 
@@ -119,19 +124,20 @@ const CellInput = React.memo(function CellInput({
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
                 style={cellStyle}
+                onFocus={(e) => e.target.select()}
             />
-            {hasQuality && (
-                <InfoIcon
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        fontSize: '0.9rem',
-                        color: '#999'
-                    }}
-                    titleAccess="This day has a quality measurement"
-                />
-            )}
+            {/*{hasQuality && (*/}
+            {/*    <InfoIcon*/}
+            {/*        style={{*/}
+            {/*            position: 'absolute',*/}
+            {/*            top: 0,*/}
+            {/*            right: 0,*/}
+            {/*            fontSize: '0.9rem',*/}
+            {/*            color: '#999'*/}
+            {/*        }}*/}
+            {/*        titleAccess={fatPct}*/}
+            {/*    />*/}
+            {/*)}*/}
         </div>
     )
 })
@@ -275,6 +281,14 @@ export default function DailyEntriesPage() {
         )
     }
 
+    function getFatPctForDay(supplierId, day) {
+        const dateStr = makeDateString(year, month, day);
+        const entry = dailyEntries.find(
+            (e) => e.supplierId === supplierId && e.date === dateStr
+        );
+        return entry?.fatPct;
+    }
+
     // Bulk Save
     async function handleBulkSave() {
         // Build array of changes
@@ -307,7 +321,7 @@ export default function DailyEntriesPage() {
                 body: JSON.stringify(upserts)
             })
             await fetchData(year, month)
-            alert('Saved successfully!')
+            // alert('Saved successfully!')
         } catch (err) {
             console.error('Bulk save error:', err)
             alert('Failed to save changes.')
@@ -319,6 +333,80 @@ export default function DailyEntriesPage() {
         setChanges({})
     }
 
+    async function handleExportXlsx() {
+        try {
+            // 1) Build a 2D array (Array of Arrays) that mirrors your table
+            // -------------------------------------------------------------
+            const headerRow = ["Supplier", ...daysToShow.map(d => `${d}`), "Ukupno", "mm"];
+            const data = [headerRow];
+
+            suppliers.forEach(sup => {
+                // for each supplier, build one row
+                // e.g., [ "John Doe", valDay1, valDay2, ..., rowTotal, avgFat, "?" ]
+                const row = [];
+
+                // Supplier name
+                row.push(`${sup.firstName} ${sup.lastName}`);
+
+                // Day columns
+                daysToShow.forEach(day => {
+                    const val = getCellValue(sup.id, day);
+                    // e.g. your existing function that merges "changes" or "original"
+                    row.push(val);
+                });
+
+                // Row total
+                const rTotal = rowTotals[sup.id] || 0;
+                row.push(rTotal);
+
+                // Average Fat%
+                const avgFat = getAverageFatPct(sup.id);
+                row.push(avgFat);
+
+                data.push(row);
+            });
+
+            // Optionally add a final totals row
+            if (suppliers.length > 0) {
+                // e.g.: ["Column Totals", colDay1, colDay2, ..., grandTotal, "", ""]
+                const totalRow = [];
+                totalRow.push("Column Totals");
+                daysToShow.forEach(day => {
+                    const colVal = columnTotals[day]?.toFixed(2) ?? "0.00";
+                    totalRow.push(colVal);
+                });
+                totalRow.push(grandTotal.toFixed(2));  // grand total
+                totalRow.push(""); // no average in totals row
+                totalRow.push(""); // no quality in totals row
+                data.push(totalRow);
+            }
+
+            // 2) Create a worksheet from the AOA
+            // -------------------------------------------------------------
+            const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+            // 3) Create a workbook and add the worksheet
+            // -------------------------------------------------------------
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Daily Entries");
+
+            // Optional: auto-size columns
+            // A quick hack is to guess column widths based on the longest string
+            const wsCols = headerRow.map((header) => ({ wch: header.toString().length + 5 }));
+            worksheet["!cols"] = wsCols;
+
+            // 4) Export workbook to XLSX file
+            // -------------------------------------------------------------
+            XLSX.writeFile(workbook, "DailyEntries.xlsx");
+
+            // That’s it! The user gets a download prompt with "DailyEntries.xlsx".
+        } catch (err) {
+            console.error("Export error:", err);
+            alert("Failed to export XLSX file.");
+        }
+    }
+
+
     // Should we show Save/Discard?
     const hasAnyChanges = useMemo(() => {
         // If any supplier has at least one changed day
@@ -327,8 +415,46 @@ export default function DailyEntriesPage() {
         })
     }, [changes])
 
+    useEffect(() => {
+        const handleBeforeUnload = (event) => {
+            if (hasAnyChanges) {
+                event.preventDefault();
+                event.returnValue = "Imate nesačuvane promene. Da li ste sigurni da želite da napustite stranicu?";
+            }
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, [hasAnyChanges]);
+
+
+
     // Quality dialog
     function openQualityDialog(supplier) {
+        if (hasAnyChanges) {
+            confirmAlert({
+                title: 'Imate promene',
+                message: 'Da li želite da sačuvajte promene?',
+                buttons: [
+                    {
+                        label: 'Da',
+                        onClick: () => handleBulkSave()
+                    },
+                    {
+                        label: 'Ne - promene mogu biti izbrisane',
+                        onClick: () => handleOpenConfirmDialog(supplier)
+                    }
+                ]
+            });
+        }
+        else {
+            handleOpenConfirmDialog(supplier)
+        }
+
+    }
+
+    function handleOpenConfirmDialog(supplier) {
         setQualitySupplier(supplier)
         const filtered = dailyEntries
             .filter(
@@ -353,7 +479,7 @@ export default function DailyEntriesPage() {
         const firstDay = daysToShow[0] || 1
         setQualityEntries((prev) => [
             ...prev,
-            { id: null, date: makeDateString(year, month, firstDay), fatPct: 3.2 }
+            { id: null, date: makeDateString(year, month, firstDay), fatPct: 3.8 }
         ])
     }
 
@@ -406,6 +532,7 @@ export default function DailyEntriesPage() {
         } catch (err) {
             console.error('Saving quality error:', err)
         }
+
         await fetchData(year, month)
         closeQualityDialog()
     }
@@ -417,7 +544,7 @@ export default function DailyEntriesPage() {
     return (
         <Box p={1}>
             <Typography variant="h6" mb={1}>
-                Monthly Milk Collection
+                Mesečni prijem mleka
             </Typography>
 
             {/* Filters & Buttons */}
@@ -445,11 +572,19 @@ export default function DailyEntriesPage() {
                 <FormControl size="small">
                     <InputLabel>Period</InputLabel>
                     <Select value={period} label="Period" onChange={(e) => setPeriod(e.target.value)}>
-                        <MenuItem value="FIRST_HALF">First Half</MenuItem>
-                        <MenuItem value="SECOND_HALF">Second Half</MenuItem>
-                        <MenuItem value="FULL">Full Month</MenuItem>
+                        <MenuItem value="FIRST_HALF">Prvi deo</MenuItem>
+                        <MenuItem value="SECOND_HALF">Drugi deo</MenuItem>
+                        <MenuItem value="FULL">Ceo mesec</MenuItem>
                     </Select>
                 </FormControl>
+
+                <Button
+                    variant="outlined"
+                    startIcon={<GetAppIcon />}
+                    onClick={handleExportXlsx}
+                >
+                    Export XLSX
+                </Button>
 
                 {/* Only show Save/Discard if we have changes */}
                 {hasAnyChanges && (
@@ -478,20 +613,20 @@ export default function DailyEntriesPage() {
             <Table size="small" sx={{ '& th, & td': { padding: '4px' } }}>
                 <TableHead>
                     <TableRow>
-                        <TableCell>Supplier</TableCell>
+                        <TableCell>Ime i prezime</TableCell>
                         {daysToShow.map((day) => (
                             <TableCell key={day} align="center" sx={{ minWidth: '50px' }}>
                                 {day}
                             </TableCell>
                         ))}
                         <TableCell align="right" sx={{ minWidth: '60px' }}>
-                            Row Total
+                            Ukupno
                         </TableCell>
                         <TableCell align="center" sx={{ minWidth: '60px' }}>
-                            Avg Fat%
+                            Prosečna mm
                         </TableCell>
                         <TableCell align="center" sx={{ minWidth: '80px' }}>
-                            Quality
+                            Dodaj mm
                         </TableCell>
                     </TableRow>
                 </TableHead>
@@ -508,7 +643,8 @@ export default function DailyEntriesPage() {
                                     const originalVal = getOriginalQty(sup.id, day).toString() || ''
                                     const changedVal = changes[sup.id]?.[day]
                                     const displayVal = changedVal !== undefined ? changedVal : originalVal
-                                    const cellHasQuality = hasQuality(sup.id, day)
+                                    const cellHasQuality = hasQuality(sup.id, day);
+                                    const fatPctVal = getFatPctForDay(sup.id, day);
                                     return (
                                         <TableCell key={day} align="center">
                                             <CellInput
@@ -517,7 +653,13 @@ export default function DailyEntriesPage() {
                                                 initialValue={displayVal}
                                                 onCellChange={handleCellChange}
                                                 hasQuality={cellHasQuality}
+                                                fatPct={fatPctVal}
                                             />
+                                            {fatPctVal != null && (
+                                                <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                                                    {fatPctVal.toFixed(1)}
+                                                </div>
+                                            )}
                                         </TableCell>
                                     )
                                 })}
@@ -600,6 +742,7 @@ export default function DailyEntriesPage() {
                                         value={qe.fatPct}
                                         onChange={(e) => handleQualityChange(idx, 'fatPct', e.target.value)}
                                         sx={{ width: '80px' }}
+                                        inputProps={{ step: 0.1 }}
                                     />
                                     <IconButton
                                         size="small"
@@ -611,7 +754,7 @@ export default function DailyEntriesPage() {
                                 </Box>
                             ))}
                             <Button variant="outlined" onClick={handleAddQualityEntry}>
-                                Add Entry
+                                Dodaj mm
                             </Button>
                         </Box>
                     </DialogContent>
