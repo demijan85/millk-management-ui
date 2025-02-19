@@ -1,0 +1,20 @@
+<svg
+        width="64"
+        height="64"
+        viewBox="0 0 64 64"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+>
+    <!-- White circle background (the "milk sea") -->
+    <circle cx="32" cy="32" r="32" fill="#FFFFFF" />
+
+    <!-- Stylized golden droplet -->
+    <path
+            d="M32 18
+       C28 24, 24 31, 30 40
+       C34 47, 40 47, 34 40
+       C40 31, 36 24, 32 18
+       Z"
+            fill="#FFD700"
+    />
+</svg>

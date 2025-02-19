@@ -11,7 +11,7 @@ import {
 } from '@mui/material'
 import HomeIcon from '@mui/icons-material/Home'
 import PersonIcon from '@mui/icons-material/Person'
-import {CalendarMonth, CalendarViewMonth} from "@mui/icons-material";
+import {CalendarMonth, CalendarToday, CalendarViewMonth} from "@mui/icons-material";
 
 // A fixed width when expanded, smaller width when collapsed
 const SIDEBAR_WIDTH_EXPANDED = 200
@@ -47,7 +47,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
                     <Typography variant="h6">Logo</Typography>
                 ) : (
                     <>
-                        <Typography variant="h6">MyCompany</Typography>
+                        <Typography variant="h6">ZLATARKA</Typography>
                         {/* Alternatively, you can place your brand logo here */}
                     </>
                 )}
@@ -63,12 +63,12 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
                 />
                 <SidebarItem
                     icon={<PersonIcon />}
-                    text="Suppliers"
+                    text="Dobavljaci"
                     collapsed={collapsed}
                     to="/suppliers"
                 />
                 <SidebarItem
-                    icon={<PersonIcon />}
+                    icon={<CalendarToday />}
                     text="Dnevni otkup"
                     collapsed={collapsed}
                     to="/daily-entry"

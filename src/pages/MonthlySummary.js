@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 import GetAppIcon from '@mui/icons-material/GetApp'
 import API_BASE_URL from '../apiConfig'
+import {Downloading} from "@mui/icons-material";
 
 export default function MonthlySummary() {
     // -----------------------------
@@ -94,6 +95,36 @@ export default function MonthlySummary() {
         }
     }
 
+    const handlePaymentXml = async () => {
+        try {
+            const getFileUrl = `${API_BASE_URL}/api/summaries/monthly/payments?year=${year}&month=${month}&city=${city}&period=${period}`
+            const response = await fetch(getFileUrl)
+            if (!response.ok) {
+                throw new Error('Export failed.')
+            }
+            const blob = await response.blob();
+
+            // 3) Create a temporary download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // 4) Set the filename
+            link.setAttribute('download', 'pmtorders.xml');
+
+            // 5) Append to the DOM, trigger click, then remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // 6) Release the object URL after download
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Error downloading XML file:', error);
+        }
+    }
+
     const handleDownloadReceipts = async () => {
         try {
             const url = `${API_BASE_URL}/api/summaries/monthly/receipts?year=${year}&month=${month}&city=${city}&period=${period}`
@@ -139,6 +170,9 @@ export default function MonthlySummary() {
                     <IconButton onClick={handleDownloadReceipts}>
                         <GetAppIcon />
                     </IconButton>
+                    <IconButton onClick={handlePaymentXml}>
+                        <Downloading />
+                    </IconButton>
                 </Box>
             </Box>
 
@@ -160,7 +194,6 @@ export default function MonthlySummary() {
                         onChange={(e) => setYear(e.target.value)}
                     >
                         {/* You can generate dynamic year options or manually list them */}
-                        <MenuItem value={2023}>2023</MenuItem>
                         <MenuItem value={2024}>2024</MenuItem>
                         <MenuItem value={2025}>2025</MenuItem>
                     </Select>
