@@ -17,31 +17,28 @@ export default function SuppliersPage() {
     const [suppliers, setSuppliers] = useState([])
     const [isLoading, setIsLoading] = useState(true)
 
-    // Filter by city
     const [selectedCity, setSelectedCity] = useState('')
     const [allCities, setAllCities] = useState([])
 
-    // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false)
     const [dialogMode, setDialogMode] = useState(null) // 'ADD' or 'EDIT'
-    const [currentSupplier, setCurrentSupplier] = useState(null) // data for editing
+    const [currentSupplier, setCurrentSupplier] = useState(null)
 
     useEffect(() => {
         fetchSuppliers()
     }, [])
 
-    // ---------------------------
-    // 1) Fetch suppliers
-    // ---------------------------
     const fetchSuppliers = async () => {
         setIsLoading(true)
         try {
             const response = await fetch(`${API_BASE_URL}/api/suppliers`)
-            const data = await response.json()
-            data.sort((a, b) => a.id - b.id) // sort by ID ascending
+            let data = await response.json()
+
+            // Sort suppliers by orderIndex ascending (or fallback by id if orderIndex is missing)
+            data.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+
             setSuppliers(data)
 
-            // Collect distinct cities
             const uniqueCities = [...new Set(data.map((s) => s.city || ''))]
             setAllCities(uniqueCities.sort())
         } catch (err) {
@@ -51,44 +48,61 @@ export default function SuppliersPage() {
         }
     }
 
-    // ---------------------------
-    // 2) Filter suppliers by city
-    // ---------------------------
+    // Filter suppliers by city
     const filteredSuppliers = selectedCity
         ? suppliers.filter((s) => s.city === selectedCity)
         : suppliers
 
-    // ---------------------------
-    // 3) Reorder rows (move up/down)
-    // ---------------------------
+    // --------------------------------------------
+    // 3) Reorder in the local state only
+    // --------------------------------------------
     const handleReorder = (index, direction) => {
-        const newSuppliers = [...suppliers]
+        setSuppliers((prevSuppliers) => {
+            const newSuppliers = [...prevSuppliers]
 
-        if (direction === 'up' && index > 0) {
-            ;[newSuppliers[index - 1], newSuppliers[index]] = [
-                newSuppliers[index],
-                newSuppliers[index - 1]
-            ]
-        } else if (direction === 'down' && index < newSuppliers.length - 1) {
-            ;[newSuppliers[index + 1], newSuppliers[index]] = [
-                newSuppliers[index],
-                newSuppliers[index + 1]
-            ]
-        } else {
-            return
-        }
+            if (direction === 'up' && index > 0) {
+                const temp = newSuppliers[index]
+                newSuppliers[index] = newSuppliers[index - 1]
+                newSuppliers[index - 1] = temp
+            } else if (direction === 'down' && index < newSuppliers.length - 1) {
+                const temp = newSuppliers[index]
+                newSuppliers[index] = newSuppliers[index + 1]
+                newSuppliers[index + 1] = temp
+            }
 
-        setSuppliers(newSuppliers)
-        // Optionally: call an API to save new order
+            return newSuppliers
+        })
     }
 
-    // ---------------------------
-    // 4) Delete (invalidate)
-    // ---------------------------
+    // --------------------------------------------
+    // 4) "Save Order" - bulk update to server
+    // --------------------------------------------
+    const handleSaveOrder = async () => {
+        // Create a minimal payload with { id, orderIndex }
+        const reorderPayload = suppliers.map((s, idx) => ({
+            id: s.id,
+            orderIndex: idx // or idx+1, depending on how you want to store it
+        }))
+
+        try {
+            await fetch(`${API_BASE_URL}/api/suppliers/reorder`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reorderPayload)
+            })
+
+            // Optionally refetch
+            await fetchSuppliers()
+        } catch (err) {
+            console.error('Failed to save new order:', err)
+        }
+    }
+
+    // ... The rest of your CRUD (delete, add, edit, etc.) ...
     const handleDelete = async (supplierId) => {
         try {
             await fetch(`${API_BASE_URL}/api/suppliers/${supplierId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
             })
             fetchSuppliers()
         } catch (err) {
@@ -96,52 +110,37 @@ export default function SuppliersPage() {
         }
     }
 
-    // ---------------------------
-    // 5) ADD: open dialog
-    // ---------------------------
     const openAddDialog = () => {
         setDialogMode('ADD')
-        setCurrentSupplier(null) // clear current data
+        setCurrentSupplier(null)
         setDialogOpen(true)
     }
 
-    // ---------------------------
-    // 6) EDIT: open dialog
-    // ---------------------------
     const openEditDialog = (supplier) => {
         setDialogMode('EDIT')
-        setCurrentSupplier(supplier) // pass existing data
+        setCurrentSupplier(supplier)
         setDialogOpen(true)
     }
 
-    // ---------------------------
-    // 7) Close dialog
-    // ---------------------------
     const closeDialog = () => {
         setDialogOpen(false)
     }
 
-    // ---------------------------
-    // 8) Save (Add or Edit)
-    // ---------------------------
     const handleSaveSupplier = async (supplierData, mode) => {
         try {
             if (mode === 'ADD') {
-                // POST
                 await fetch(`${API_BASE_URL}/api/suppliers`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(supplierData)
                 })
             } else if (mode === 'EDIT') {
-                // PUT /suppliers/:id
                 await fetch(`${API_BASE_URL}/api/suppliers/${supplierData.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(supplierData)
                 })
             }
-            // Refresh
             await fetchSuppliers()
         } catch (err) {
             console.error('Error saving supplier:', err)
@@ -154,22 +153,22 @@ export default function SuppliersPage() {
         <Box sx={{ p: 2 }}>
             {/* Header + "Add" Button */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h5">Suppliers</Typography>
+                <Typography variant="h5">Poljoprivrednici</Typography>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={openAddDialog}
                 >
-                    Add New Supplier
+                    Dodaj novog
                 </Button>
             </Box>
 
             {/* Filter by City */}
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <FormControl size="small" sx={{ width: 200 }}>
-                    <InputLabel>Filter by City</InputLabel>
+                    <InputLabel>Grad</InputLabel>
                     <Select
-                        label="Filter by City"
+                        label="Grad"
                         value={selectedCity}
                         onChange={(e) => setSelectedCity(e.target.value)}
                     >
@@ -181,6 +180,17 @@ export default function SuppliersPage() {
                         ))}
                     </Select>
                 </FormControl>
+
+                {/* "Save Order" button, visible if suppliers exist */}
+                {suppliers.length > 1 && (
+                    <Button
+                        variant="outlined"
+                        sx={{ ml: 2 }}
+                        onClick={handleSaveOrder}
+                    >
+                        Sačuvaj redosled
+                    </Button>
+                )}
             </Box>
 
             {/* Table or Loading */}

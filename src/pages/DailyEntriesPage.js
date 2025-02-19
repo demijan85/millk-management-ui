@@ -176,6 +176,8 @@ export default function DailyEntriesPage() {
             const supData = await supRes.json()
             const dailyData = await dailyRes.json()
 
+            supData.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+
             setSuppliers(supData)
             setDailyEntries(dailyData)
             setChanges({})

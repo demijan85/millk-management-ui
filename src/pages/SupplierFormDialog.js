@@ -19,7 +19,7 @@ export default function SupplierFormDialog({
                                            }) {
     // If editing, populate with initialData; if adding, start empty
     const [formData, setFormData] = useState({
-        id: '',
+        orderIndex: 0,
         firstName: '',
         lastName: '',
         phone: '',
@@ -39,7 +39,7 @@ export default function SupplierFormDialog({
         } else {
             // If adding, reset to empty
             setFormData({
-                id: '',
+                orderIndex: 0,
                 firstName: '',
                 lastName: '',
                 phone: '',
@@ -72,15 +72,13 @@ export default function SupplierFormDialog({
             <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                    {/* ID is only relevant if editing (could be read-only) */}
-                    {mode === 'EDIT' && (
-                        <TextField
-                            label="ID"
-                            name="id"
-                            value={formData.id}
-                            InputProps={{ readOnly: true }}
-                        />
-                    )}
+                    <TextField
+                        label="Order Index"
+                        name="orderIndex"
+                        type="number"
+                        value={formData.orderIndex}
+                        onChange={handleChange}
+                    />
 
                     <TextField
                         label="First Name"

@@ -1,4 +1,3 @@
-// src/pages/SupplierTable.js
 import React from 'react'
 import {
     Table,
@@ -26,18 +25,18 @@ export default function SupplierTable({ suppliers, onReorder, onDelete, onEdit }
             <Table size="small">
                 <TableHead>
                     <TableRow>
-                        <TableCell>ID</TableCell>
-                        <TableCell>First Name</TableCell>
-                        <TableCell>Last Name</TableCell>
-                        <TableCell>Phone</TableCell>
-                        <TableCell>Email</TableCell>
+                        <TableCell>RB</TableCell>
+                        <TableCell>Ime</TableCell>
+                        <TableCell>Prezime</TableCell>
+                        <TableCell>Telefon</TableCell>
+                        {/*<TableCell>Email</TableCell>*/}
                         <TableCell>JMBG</TableCell>
-                        <TableCell>Agr. No.</TableCell>
-                        <TableCell>Bank Account</TableCell>
-                        <TableCell>Street</TableCell>
-                        <TableCell>City</TableCell>
-                        <TableCell>Country</TableCell>
-                        <TableCell>Zip Code</TableCell>
+                        {/*<TableCell>Agr. No.</TableCell>*/}
+                        <TableCell>Broj racuna u banci</TableCell>
+                        <TableCell>Ulica</TableCell>
+                        <TableCell>Grad</TableCell>
+                        <TableCell>Drzava</TableCell>
+                        <TableCell>Pozivni broj</TableCell>
                         <TableCell colSpan={3} align="center">
                             Actions
                         </TableCell>
@@ -47,13 +46,13 @@ export default function SupplierTable({ suppliers, onReorder, onDelete, onEdit }
                 <TableBody>
                     {suppliers.map((supplier, idx) => (
                         <TableRow key={supplier.id}>
-                            <TableCell>{supplier.id}</TableCell>
+                            <TableCell>{supplier.orderIndex + 1}</TableCell>
                             <TableCell>{supplier.firstName}</TableCell>
                             <TableCell>{supplier.lastName}</TableCell>
                             <TableCell>{supplier.phone}</TableCell>
-                            <TableCell>{supplier.email}</TableCell>
+                            {/*<TableCell>{supplier.email}</TableCell>*/}
                             <TableCell>{supplier.jmbg}</TableCell>
-                            <TableCell>{supplier.agricultureNumber}</TableCell>
+                            {/*<TableCell>{supplier.agricultureNumber}</TableCell>*/}
                             <TableCell>{supplier.bankAccount}</TableCell>
                             <TableCell>{supplier.street}</TableCell>
                             <TableCell>{supplier.city}</TableCell>
