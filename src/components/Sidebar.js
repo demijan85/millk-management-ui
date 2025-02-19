@@ -11,6 +11,7 @@ import {
 } from '@mui/material'
 import HomeIcon from '@mui/icons-material/Home'
 import PersonIcon from '@mui/icons-material/Person'
+import {CalendarMonth, CalendarViewMonth} from "@mui/icons-material";
 
 // A fixed width when expanded, smaller width when collapsed
 const SIDEBAR_WIDTH_EXPANDED = 200
@@ -62,21 +63,27 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
                 />
                 <SidebarItem
                     icon={<PersonIcon />}
-                    text="Profile"
-                    collapsed={collapsed}
-                    to="/profile"
-                />
-                <SidebarItem
-                    icon={<PersonIcon />}
                     text="Suppliers"
                     collapsed={collapsed}
                     to="/suppliers"
                 />
                 <SidebarItem
                     icon={<PersonIcon />}
-                    text="Daily Entry"
+                    text="Dnevni otkup"
                     collapsed={collapsed}
                     to="/daily-entry"
+                />
+                <SidebarItem
+                    icon={<CalendarMonth />}
+                    text="Mesecni prikaz"
+                    collapsed={collapsed}
+                    to="/monthly"
+                />
+                <SidebarItem
+                    icon={<CalendarViewMonth />}
+                    text="Kvartalni prikaz"
+                    collapsed={collapsed}
+                    to="/quarterly"
                 />
             </List>
         </Drawer>

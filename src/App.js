@@ -3,9 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import MainLayout from './layout/MainLayout'
-import Profile from "./pages/Profile";
+import MonthlySummary from "./pages/MonthlySummary";
 import Suppliers from "./pages/Suppliers";
 import DailyEntriesPage from "./pages/DailyEntriesPage";
+import QuarterlySummary from "./pages/QuarterlySummary";
 
 // Example of a Protected Route
 function PrivateRoute({ children }) {
@@ -33,9 +34,10 @@ export default function App() {
         >
             {/* All routes inside the MainLayout are protected */}
             <Route index element={<Dashboard />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="monthly" element={<MonthlySummary />} />
             <Route path="suppliers" element={<Suppliers />} />
             <Route path="daily-entry" element={<DailyEntriesPage />} />
+            <Route path="quarterly" element={<QuarterlySummary />}/>
         </Route>
       </Routes>
   )
